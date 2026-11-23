@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser</title>
+<style>
+:root{
+  --frame:#dfe3ea; --tab-idle:#cdd2db; --tab-on:#f7f8fa; --bar:#f7f8fa;
+  --field:#e9ecf1; --field-focus:#fff; --ink:#1d2330; --ink-soft:#5d667a;
+  --line:#c3c9d4; --accent:#2f6bff; --page:#fff; --hover:rgba(30,40,60,.1);
+}
+@media (prefers-color-scheme:dark){
+  :root{--frame:#14171d; --tab-idle:#20242c; --tab-on:#2b303b; --bar:#2b303b;
+  --field:#1b1f27; --field-focus:#12151b; --ink:#e8ebf2; --ink-soft:#9aa3b5;
+  --line:#3a4050; --accent:#6c97ff; --page:#fff; --hover:rgba(255,255,255,.1);}
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--frame);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* Tab strip */
+#tabstrip{display:flex;align-items:flex-end;gap:2px;padding:8px 8px 0;min-height:40px;padding-top:env(safe-area-inset-top,8px)}
+#tabs{display:flex;align-items:flex-end;gap:2px;min-width:0;flex:0 1 auto;overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;display:flex;align-items:center;gap:8px;flex:0 1 220px;min-width:60px;width:220px;height:32px;padding:0 6px 0 12px;background:var(--tab-idle);border-radius:9px 9px 0 0;cursor:default;user-select:none}
+.tab:hover{background:var(--hover)}
+.tab[aria-selected="true"]{background:var(--tab-on);height:34px}
+.tab .fav{width:16px;height:16px;flex:none;border-radius:3px;display:grid;place-items:center;font-size:12px}
+.tab .fav img{width:16px;height:16px;border-radius:3px}
+.tab .title{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tab .x{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;line-height:1}
+.tab .x:hover{background:var(--hover);color:var(--ink)}
+.tab.loading .fav{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.tab.loading .fav{animation:none;opacity:.5}}
+#newtab{width:28px;height:28px;border-radius:50%;margin:0 0 3px 4px;font-size:18px;color:var(--ink-soft);flex:none}
+#newtab:hover{background:var(--hover);color:var(--ink)}
+
+/* Toolbar */
+#toolbar{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--bar);border-bottom:1px solid var(--line)}
+.nav{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none}
+.nav:hover:not(:disabled){background:var(--hover)}
+.nav:disabled{opacity:.35;cursor:default}
+.nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#addr{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:17px;background:var(--field);border:1px solid transparent}
+#addr:focus-within{background:var(--field-focus);border-color:var(--accent)}
+#addr .lock{color:var(--ink-soft);font-size:12px;flex:none}
+#url{flex:1;min-width:0;background:none;border:0;color:var(--ink);font:inherit;outline:0}
+#progress{height:2px;background:var(--accent);width:0;transition:width .3s}
+
+/* Bookmarks */
+#marks{display:flex;gap:2px;padding:3px 10px;background:var(--bar);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+#marks button{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;white-space:nowrap;font-size:13px;flex:none}
+#marks button:hover{background:var(--hover)}
+#marks img{width:14px;height:14px}
+
+/* Viewport */
+#view{flex:1;position:relative;background:var(--page);min-height:0}
+#view iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.start{position:absolute;inset:0;overflow:auto;background:var(--frame);display:flex;flex-direction:column;align-items:center;padding:12vh 20px 24px}
+.start h1{font-size:clamp(28px,5vw,44px);margin:0 0 20px;font-weight:650;letter-spacing:-.02em}
+.start form{width:min(560px,100%);display:flex;margin-bottom:28px}
+.start input{flex:1;height:46px;padding:0 20px;border-radius:23px;border:1px solid var(--line);background:var(--field-focus);color:var(--ink);font:inherit;font-size:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;width:min(620px,100%)}
+.tiles button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border-radius:12px}
+.tiles button:hover{background:var(--hover)}
+.tiles .ic{width:48px;height:48px;border-radius:50%;background:var(--field-focus);display:grid;place-items:center}
+.tiles .ic img{width:26px;height:26px}
+.note{max-width:560px;margin-top:28px;color:var(--ink-soft);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="tabstrip">
+  <div id="tabs" role="tablist" aria-label="Open tabs"></div>
+  <button id="newtab" title="New tab" aria-label="New tab">+</button>
+</div>
+
+<div id="toolbar">
+  <button class="nav" id="back" title="Back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="nav" id="fwd" title="Forward" aria-label="Forward"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="nav" id="reload" title="Reload" aria-label="Reload"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5"/></svg></button>
+  <form id="addr" autocomplete="off"><span class="lock" aria-hidden="true">🔒</span><input id="url" aria-label="Address" placeholder="Search Wikipedia or enter a web address" spellcheck="false"></form>
+  <button class="nav" id="ext" title="Open this page in a real browser tab" aria-label="Open in a real browser tab"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+</div>
+<div id="progress"></div>
+<div id="marks" aria-label="Bookmarks"></div>
+<main id="view"></main>
+
+<script>
+const SITES = [
+  {name:"Wikipedia", url:"https://en.wikipedia.org/wiki/Main_Page"},
+  {name:"OpenStreetMap", url:"https://www.openstreetmap.org/"},
+  {name:"Wikimedia Commons", url:"https://commons.wikimedia.org/"},
+  {name:"Example", url:"https://example.com/"},
+  {name:"Wikivoyage", url:"https://en.wikivoyage.org/"}
+];
+const SEARCH = "https://en.wikipedia.org/w/index.php?search=";
+const fav = h => `https://www.google.com/s2/favicons?domain=${h}&sz=32`;
+const $ = id => document.getElementById(id);
+const tabsEl=$("tabs"), view=$("view"), url=$("url");
+
+let tabs=[], active=null, uid=0;
+
+function host(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch{ return ""; } }
+
+function normalize(text){
+  text = text.trim();
+  if(!text) return "";
+  if(/^https?:\/\//i.test(text)) return text.replace(/^http:\/\//i,"https://");
+  if(/^[^\s]+\.[a-z]{2,}([\/?#:].*)?$/i.test(text)) return "https://"+text;
+  return SEARCH+encodeURIComponent(text);
+}
+
+function newTab(target){
+  const t={id:++uid,hist:[],i:-1,title:"New tab",el:null,frame:null,start:null,tabEl:null};
+  tabs.push(t);
+  t.tabEl=document.createElement("div");
+  t.tabEl.className="tab"; t.tabEl.setAttribute("role","tab");
+  t.tabEl.innerHTML='<span class="fav">🌐</span><span class="title"></span><button class="x" aria-label="Close tab">×</button>';
+  t.tabEl.addEventListener("mousedown",e=>{ if(e.button===1){e.preventDefault();closeTab(t);} });
+  t.tabEl.addEventListener("click",e=>{ if(e.target.closest(".x")) closeTab(t); else select(t); });
+  tabsEl.appendChild(t.tabEl);
+  select(t);
+  if(target) go(t,target); else showStart(t);
+  return t;
+}
+
+function showStart(t){
+  clearFrame(t);
+  t.title="New tab";
+  const d=document.createElement("div"); d.className="start";
+  d.innerHTML=`<h1>New tab</h1>
+  <form><input aria-label="Search Wikipedia or enter an address" placeholder="Search Wikipedia or enter an address"></form>
+  <div class="tiles"></div>
+  <p class="note">Some sites (Google, YouTube, most social networks) refuse to be shown inside other pages. If a tab stays blank, use the arrow button in the toolbar to open it in a real tab.</p>`;
+  const tiles=d.querySelector(".tiles");
+  SITES.forEach(s=>{
+    const b=document.createElement("button");
+    b.innerHTML=`<span class="ic"><img alt="" src="${fav(host(s.url))}"></span><span>${s.name}</span>`;
+    b.onclick=()=>go(t,s.url); tiles.appendChild(b);
+  });
+  d.querySelector("form").onsubmit=e=>{e.preventDefault();const v=normalize(d.querySelector("input").value); if(v) go(t,v);};
+  t.start=d; view.appendChild(d);
+  paintTab(t); if(t===active) sync();
+}
+
+function clearFrame(t){
+  if(t.frame){t.frame.remove();t.frame=null;}
+  if(t.start){t.start.remove();t.start=null;}
+}
+
+function go(t,target,fromHistory){
+  const u=normalize(target); if(!u) return;
+  clearFrame(t);
+  if(!fromHistory){ t.hist=t.hist.slice(0,t.i+1); t.hist.push(u); t.i=t.hist.length-1; }
+  const f=document.createElement("iframe");
+  f.referrerPolicy="no-referrer";
+  f.allow="fullscreen; clipboard-write; geolocation";
+  f.setAttribute("sandbox","allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads");
+  f.title=host(u);
+  t.frame=f; t.title=host(u);
+  t.tabEl.classList.add("loading");
+  if(t===active) bar(30);
+  f.addEventListener("load",()=>{ t.tabEl.classList.remove("loading"); if(t===active) bar(100,true); });
+  f.src=u;
+  view.appendChild(f);
+  paintTab(t); if(t===active) sync();
+}
+
+function paintTab(t){
+  const cur=t.hist[t.i];
+  t.tabEl.querySelector(".title").textContent=t.title;
+  const fv=t.tabEl.querySelector(".fav");
+  fv.innerHTML = cur ? `<img alt="" src="${fav(host(cur))}">` : "🌐";
+  t.tabEl.title=t.title;
+  save();
+}
+
+function select(t){
+  active=t;
+  tabs.forEach(x=>{
+    const on=x===t;
+    x.tabEl.setAttribute("aria-selected",on);
+    if(x.frame) x.frame.style.display=on?"":"none";
+    if(x.start) x.start.style.display=on?"":"none";
+  });
+  t.tabEl.scrollIntoView({inline:"nearest",block:"nearest"});
+  sync();
+}
+
+function closeTab(t){
+  const k=tabs.indexOf(t);
+  clearFrame(t); t.tabEl.remove(); tabs.splice(k,1);
+  if(!tabs.length){ newTab(); return; }
+  if(active===t) select(tabs[Math.min(k,tabs.length-1)]);
+  save();
+}
+
+function sync(){
+  const t=active; if(!t) return;
+  const cur=t.hist[t.i]||"";
+  url.value=cur;
+  $("back").disabled = t.i<=0 && !(t.i===0 && false);
+  $("back").disabled = t.i<0 ? true : false;
+  $("fwd").disabled = t.i>=t.hist.length-1;
+  $("ext").disabled = !cur;
+  $("reload").disabled = !cur;
+  document.title = (t.title==="New tab"?"":t.title+" – ")+"Browser";
+}
+
+let barTimer;
+function bar(p,done){
+  const el=$("progress"); clearTimeout(barTimer);
+  el.style.transition="width .3s"; el.style.width=p+"%";
+  if(done) barTimer=setTimeout(()=>{el.style.width="0";},350);
+}
+
+$("back").onclick=()=>{
+  const t=active;
+  if(t.i>0){ t.i--; go(t,t.hist[t.i],true); }
+  else { t.i=-1; showStart(t); }
+};
+$("fwd").onclick=()=>{ const t=active; if(t.i<t.hist.length-1){ t.i++; go(t,t.hist[t.i],true);} };
+$("reload").onclick=()=>{ const t=active; if(t.hist[t.i]) go(t,t.hist[t.i],true); };
+$("ext").onclick=()=>{ const u=active.hist[active.i]; if(u) window.open(u,"_blank","noopener"); };
+$("newtab").onclick=()=>{ newTab(); url.focus(); };
+$("addr").onsubmit=e=>{ e.preventDefault(); const v=url.value; if(v.trim()) go(active,v); url.blur(); };
+url.addEventListener("focus",()=>url.select());
+tabsEl.parentElement.addEventListener("dblclick",e=>{ if(e.target.id==="tabstrip") newTab(); });
+
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==="l"){ e.preventDefault(); url.focus(); }
+  if(e.altKey&&e.key==="t"){ e.preventDefault(); newTab(); url.focus(); }
+  if(e.altKey&&e.key==="w"){ e.preventDefault(); closeTab(active); }
+  if(e.altKey&&e.key==="ArrowLeft"){ e.preventDefault(); $("back").click(); }
+  if(e.altKey&&e.key==="ArrowRight"){ e.preventDefault(); $("fwd").click(); }
+});
+
+// Bookmarks bar
+SITES.forEach(s=>{
+  const b=document.createElement("button");
+  b.innerHTML=`<img alt="" src="${fav(host(s.url))}"><span>${s.name}</span>`;
+  b.onclick=()=>go(active,s.url); $("marks").appendChild(b);
+});
+
+// Persist open tabs (per browser)
+function save(){
+  try{
+    localStorage.setItem("tabbed-browser",JSON.stringify({
+      a:tabs.indexOf(active),
+      t:tabs.map(t=>({u:t.hist[t.i]||""}))
+    }));
+  }catch{}
+}
+(function init(){
+  let s=null;
+  try{ s=JSON.parse(localStorage.getItem("tabbed-browser")||"null"); }catch{}
+  if(s&&s.t&&s.t.length){
+    s.t.forEach(x=>newTab(x.u||undefined));
+    if(tabs[s.a]) select(tabs[s.a]);
+  } else {
+    newTab(SITES[0].url);
+  }
+})();
+</script>
+</body>
+</html>
